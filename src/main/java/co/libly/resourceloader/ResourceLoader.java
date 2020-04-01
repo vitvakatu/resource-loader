@@ -332,17 +332,26 @@ public class ResourceLoader {
             // For non-posix like Windows find if any are true and
             // set the permissions accordingly.
             if (filePermissions.stream().anyMatch(readPerms::contains)) {
-                file.setReadable(true);
+                boolean set = file.setReadable(true);
+                checkIo(set, "Failed to set 'read' permissions for %s", file);
             }
             if (filePermissions.stream().anyMatch(writePerms::contains)) {
-                file.setWritable(true);
+                boolean set = file.setWritable(true);
+                checkIo(set, "Failed to set 'write' permissions for %s", file);
             }
             if (filePermissions.stream().anyMatch(execPerms::contains)) {
-                file.setExecutable(true);
+                boolean set = file.setExecutable(true);
+                checkIo(set, "Failed to set 'executable' permissions for %s", file);
             }
 
         }
         return file;
+    }
+
+    private static void checkIo(boolean set, String message, Object... args) throws IOException {
+        if (!set) {
+            throw new IOException(String.format(message, args));
+        }
     }
 
     /**
