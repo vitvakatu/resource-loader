@@ -9,6 +9,15 @@
 package co.libly.resourceloader;
 
 
+import static java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_READ;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static java.util.Arrays.asList;
 
 import com.sun.jna.Platform;
@@ -33,24 +42,12 @@ import java.util.zip.ZipInputStream;
  */
 public class ResourceLoader {
 
-    private final Collection<PosixFilePermission> writePerms = new ArrayList<>();
-    private final Collection<PosixFilePermission> readPerms = new ArrayList<>();
-    private final Collection<PosixFilePermission> execPerms = new ArrayList<>();
-
-
-    ResourceLoader() {
-        readPerms.add(PosixFilePermission.OWNER_READ);
-        readPerms.add(PosixFilePermission.OTHERS_READ);
-        readPerms.add(PosixFilePermission.GROUP_READ);
-
-        writePerms.add(PosixFilePermission.OWNER_WRITE);
-        writePerms.add(PosixFilePermission.OTHERS_WRITE);
-        writePerms.add(PosixFilePermission.GROUP_WRITE);
-
-        execPerms.add(PosixFilePermission.OWNER_EXECUTE);
-        execPerms.add(PosixFilePermission.OTHERS_EXECUTE);
-        execPerms.add(PosixFilePermission.GROUP_EXECUTE);
-    }
+    private static final Collection<PosixFilePermission> WRITE_PERMS =
+        EnumSet.of(OWNER_READ, OTHERS_READ, GROUP_READ);
+    private static final Collection<PosixFilePermission> READ_PERMS =
+        EnumSet.of(OWNER_WRITE, OTHERS_WRITE, GROUP_WRITE);
+    private static final Collection<PosixFilePermission> EXEC_PERMS =
+        EnumSet.of(OWNER_EXECUTE, OTHERS_EXECUTE, GROUP_EXECUTE);
 
     /**
      * Copies a file into a temporary directory regardless of
@@ -331,15 +328,15 @@ public class ResourceLoader {
         } else {
             // For non-posix like Windows find if any are true and
             // set the permissions accordingly.
-            if (filePermissions.stream().anyMatch(readPerms::contains)) {
+            if (filePermissions.stream().anyMatch(READ_PERMS::contains)) {
                 boolean set = file.setReadable(true);
                 checkIo(set, "Failed to set 'read' permissions for %s", file);
             }
-            if (filePermissions.stream().anyMatch(writePerms::contains)) {
+            if (filePermissions.stream().anyMatch(WRITE_PERMS::contains)) {
                 boolean set = file.setWritable(true);
                 checkIo(set, "Failed to set 'write' permissions for %s", file);
             }
-            if (filePermissions.stream().anyMatch(execPerms::contains)) {
+            if (filePermissions.stream().anyMatch(EXEC_PERMS::contains)) {
                 boolean set = file.setExecutable(true);
                 checkIo(set, "Failed to set 'executable' permissions for %s", file);
             }
