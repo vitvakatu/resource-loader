@@ -9,6 +9,8 @@
 package co.libly.resourceloader;
 
 
+import static java.util.Arrays.asList;
+
 import com.sun.jna.Platform;
 
 import java.io.*;
@@ -308,7 +310,7 @@ public class ResourceLoader {
     }
 
     /**
-     * Sets a file or directory's permissions. @{code filePermissions} can be null, in that
+     * Sets a file or directory's permissions. {@code filePermissions} can be empty, in that
      * case then global read, wrote and execute permissions will be set, so use
      * with caution.
      * @param file The file to set new permissions on.
@@ -317,32 +319,25 @@ public class ResourceLoader {
      * @throws IOException
      */
     public File setPermissions(File file, Set<PosixFilePermission> filePermissions) throws IOException {
+        // Expand permissions to "all" if empty
+        if (filePermissions.isEmpty()) {
+            PosixFilePermission[] allPermissions = PosixFilePermission.values();
+            filePermissions = new HashSet<>(asList(allPermissions));
+        }
+        // Set the permissions
         if (isPosixCompliant()) {
-            // For posix set fine grained permissions.
-            if (filePermissions.isEmpty()) {
-                Set<PosixFilePermission> perms = new HashSet<>();
-                perms.add(PosixFilePermission.OWNER_READ);
-                perms.add(PosixFilePermission.OWNER_WRITE);
-                perms.add(PosixFilePermission.OWNER_EXECUTE);
-
-                perms.add(PosixFilePermission.OTHERS_READ);
-                perms.add(PosixFilePermission.OTHERS_WRITE);
-                perms.add(PosixFilePermission.OTHERS_EXECUTE);
-
-                perms.add(PosixFilePermission.GROUP_READ);
-                perms.add(PosixFilePermission.GROUP_WRITE);
-                perms.add(PosixFilePermission.GROUP_EXECUTE);
-                filePermissions = perms;
-            }
+            // For posix set fine grained permissions
             Files.setPosixFilePermissions(file.toPath(), filePermissions);
         } else {
             // For non-posix like Windows find if any are true and
             // set the permissions accordingly.
             if (filePermissions.stream().anyMatch(readPerms::contains)) {
                 file.setReadable(true);
-            } else if (filePermissions.stream().anyMatch(writePerms::contains)) {
+            }
+            if (filePermissions.stream().anyMatch(writePerms::contains)) {
                 file.setWritable(true);
-            } else {
+            }
+            if (filePermissions.stream().anyMatch(execPerms::contains)) {
                 file.setExecutable(true);
             }
 
