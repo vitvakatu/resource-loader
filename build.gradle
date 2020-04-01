@@ -73,6 +73,14 @@ signing {
     sign configurations.archives
 }
 
+compileJava {
+    options.encoding = "UTF-8"
+}
+
+javadoc {
+    options.encoding = "UTF-8"
+}
+
 task sourcesJar(type: Jar, dependsOn: classes) {
     archiveClassifier.set("sources")
     from sourceSets.main.allSource
@@ -99,7 +107,7 @@ artifacts {
     archives sourcesJar, javadocJar
 }
 
-
+tasks.withType(Sign)*.enabled = false
 
 publishing {
     publications {
@@ -110,21 +118,6 @@ publishing {
             version project.ext.version
             artifact sourcesJar
             artifact javadocJar
-
-
-            project.tasks.withType(Sign) {
-                signatures.all {
-                    def type = it.type
-                    if (it.file.name.endsWith('.tar.gz.asc')) {
-                        // Workaround in case a tar.gz file should published
-                        type = 'tar.gz.asc'
-                    } else if (it.type.equals('xml.asc')) {
-                        // Set correct extension for signature of pom file
-                        type = 'pom.asc'
-                    }
-                    artifact source: it.file, classifier: it.classifier ?: null, extension: type
-                }
-            }
 
             pom.withXml {
                 def root = asNode()
